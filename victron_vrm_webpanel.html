@@ -1,0 +1,62 @@
+
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Victron VRM Webpanel</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f5f5f5; padding: 20px; }
+    h1 { color: #004080; }
+    .card { background: white; padding: 15px; margin-bottom: 10px; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    .label { font-weight: bold; }
+    .value { font-size: 1.5em; color: #008000; }
+  </style>
+</head>
+<body>
+  <h1>Victron VRM Webpanel</h1>
+
+  <div class="card">
+    <div class="label">Einspeisung Anlage A (W):</div>
+    <div id="feedin" class="value">Lade...</div>
+  </div>
+
+  <div class="card">
+    <div class="label">Batterie SoC Anlage A (%):</div>
+    <div id="soc" class="value">Lade...</div>
+  </div>
+
+  <script>
+    const token = "8399100ae9579dbc669b1f969031524d7847204cc76b1986e27aab3d1c845587";
+    const installationId = "717825";
+
+    async function loadData() {
+      try {
+        const statsUrl = `https://vrmapi.victronenergy.com/v2/installations/${installationId}/stats`;
+        const systemUrl = `https://vrmapi.victronenergy.com/v2/installations/${installationId}/system-overview`;
+
+        const [statsRes, systemRes] = await Promise.all([
+          fetch(statsUrl, { headers: { "X-Authorization": "Bearer " + token } }),
+          fetch(systemUrl, { headers: { "X-Authorization": "Bearer " + token } })
+        ]);
+
+        const statsData = await statsRes.json();
+        const systemData = await systemRes.json();
+
+        const feedin = statsData.records[0].gridPower || 0;
+        const soc = systemData.data.batterySoc || "unbekannt";
+
+        document.getElementById("feedin").innerText = Math.round(feedin) + " W";
+        document.getElementById("soc").innerText = soc + " %";
+
+      } catch (err) {
+        console.error("Fehler beim Laden:", err);
+        document.getElementById("feedin").innerText = "Fehler";
+        document.getElementById("soc").innerText = "Fehler";
+      }
+    }
+
+    loadData();
+    setInterval(loadData, 60000); // jede Minute neu laden
+  </script>
+</body>
+</html>
